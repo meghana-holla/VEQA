@@ -24,7 +24,7 @@ class VEQ(nn.Module):
         # boxes_r = boxes.repeat(1, self.num_ans , 1)
         # boxes = boxes_r.reshape(boxes.shape[0] * self.num_ans,boxes.shape[1], boxes.shape[2])
 
-        output = self.lxmert(visual_feats=features, visual_pos=boxes, input_ids=qa_tokens)
+        output = self.lxmert(visual_feats=features, visual_pos=boxes, input_ids=qa_tokens["input_ids"], attention_mask=qa_tokens["attention_mask"], token_type_ids=qa_tokens["token_type_ids"])
         output_next = output.pooled_output
         output = self.sigmoid(self.classifier(output_next))
         # output = self.norm(output, dim=None)

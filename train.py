@@ -91,19 +91,22 @@ if __name__=="__main__":
         train_score = 0
         total_loss = 0
 
-        for i, (imid, qid, q_type, answer, qa_tokens, features, boxes, scores) in tqdm(enumerate(loader)):
-            qa_tokens = qa_tokens.cuda()
+        for i, (imid, qid, q_type, answer, qa_tokens_item, features, boxes, scores) in tqdm(enumerate(loader)):
+            qa_tokens, qa_tokens_padded, qa_tokens_ids = qa_tokens_item["input_ids"].cuda(), qa_tokens_item["attention_mask"].cuda(), qa_tokens_item["token_type_ids"].cuda()
+            # qa_tokens = qa_tokens.cuda()
             features = features.cuda()
             boxes = boxes.cuda()
             scores = scores.cuda()
 
-            qa_tokens = qa_tokens.reshape(qa_tokens.shape[0] * dataset.num_ans, -1)
+            qa_tokens_item["input_ids"] = qa_tokens.reshape(qa_tokens.shape[0] * dataset.num_ans, -1)
+            qa_tokens_item["attention_mask"] = qa_tokens_padded.reshape(qa_tokens_padded.shape[0] * dataset.num_ans, -1)
+            qa_tokens_item["token_type_ids"] = qa_tokens_ids.reshape(qa_tokens_ids.shape[0] * dataset.num_ans, -1)
             features_r = features.repeat(1, dataset.num_ans, 1)
             features = features_r.reshape(features.shape[0] * dataset.num_ans, features.shape[1], features.shape[2])
             boxes_r = boxes.repeat(1, dataset.num_ans , 1)
             boxes = boxes_r.reshape(boxes.shape[0] * dataset.num_ans,boxes.shape[1], boxes.shape[2])
             
-            outputs = model(qa_tokens, features, boxes)
+            outputs = model(qa_tokens_item, features, boxes)
             outputs = outputs.reshape(-1, dataset.num_ans)
 
             loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, scores, reduction="mean") * scores.size(1)
