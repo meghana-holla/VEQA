@@ -49,6 +49,9 @@ class VEQADataset(Dataset):
             answer = self.datapoints[ind]["answer"]
             for a in self.datapoints[ind]["multiple_choices"]:
                 qas.append(q+" "+a)
+                
+                # Somewhere is will be our Hypothesis Generator Module.
+                
                 if a.strip() == answer.strip():
                     scores.append(1)
                 else:
