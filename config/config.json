@@ -1,0 +1,13 @@
+{
+    "num_ans": 18, 
+    "epochs": 10, 
+    "batch_size": 32, 
+    "output_dir": "/home/meghana/meg/VEQA/Trained", 
+    "base_dir":"/home/meghana/meg/VEQA/data", 
+    "train_q": "MultipleChoice_mscoco_train2014_questions.json", 
+    "train_a": "mscoco_train2014_annotations.json", 
+    "eval_q": "MultipleChoice_mscoco_val2014_questions.json", 
+    "eval_a": "mscoco_val2014_annotations.json", 
+    "features": "coco/trainval.zarr", 
+    "boxes": "coco/trainval_boxes.zarr"
+}
