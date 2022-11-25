@@ -4,7 +4,7 @@
     - Questions
     - Answers
 * Hypothesis Generator module
-    - Identify kinds of questions
+    - Identify kinds of questions DONE
     - Convert Question+Answer to Sentence
     - Add this to dataloader of model
 * VE
