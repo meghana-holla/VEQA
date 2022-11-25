@@ -12,6 +12,8 @@
     - Create Model module DONE
     - Train DONE
     - Inference code
+
+
     - Put model to train
 * Model Codebase
     - Add script to download data

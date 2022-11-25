@@ -2,7 +2,8 @@
 `cd VEQA`\
 `python -m venv env`\
 `source env/source/activate`\
-`pip install -r requirements.txt`
+`pip install -r requirements.txt`\
+`./download.sh`
 
 VQA Questions data [[link](https://visualqa.org/vqa_v1_download.html)]
 
