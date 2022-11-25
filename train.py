@@ -16,8 +16,9 @@ from veqa_dataset import VEQADataset
 
 
 def compute_score_with_logits(outputs, scores):
-    s = outputs*scores
-    return s
+    # s = outputs*scores
+    s = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
+    return s>0
 
 def evaluate(model, loader, cfg):
     model.eval()
@@ -49,7 +50,7 @@ def evaluate(model, loader, cfg):
                 total_loss += loss.item() * features.size(0)
 
                 final_loss = total_loss / (i * features.size(0))
-                final_score = 100 * eval_score / (i * features.size(0))
+                final_score = eval_score / (i * features.size(0))
 
     return final_loss, final_score
 
@@ -78,16 +79,17 @@ if __name__=="__main__":
     model = VEQ(cfg)
     model = model.cuda()
 
-    optim = Adam(model.parameters())
+    optim = Adam(model.parameters(), lr=1e-5)
+    optim.zero_grad()
 
     best_eval_score = 0
-    train_score = 0
-    total_loss = 0
     
     for epoch in range(cfg.epochs):
 
-        print(f"Epoch{epoch}/{cfg.epochs}:\n")
+        print(f"Epoch {epoch}/{cfg.epochs}:\n")
         model.train()
+        train_score = 0
+        total_loss = 0
 
         for i, (imid, qid, q_type, answer, qa_tokens, features, boxes, scores) in tqdm(enumerate(loader)):
             qa_tokens = qa_tokens.cuda()
@@ -112,13 +114,13 @@ if __name__=="__main__":
             optim.zero_grad()
 
             score = compute_score_with_logits(outputs, scores.data).sum()
-
+            # print("Score for this epoch: %d"%(score))
             train_score += score.item()
             total_loss += loss.item() * features.size(0)
 
-            if i != 0 and i % 2 == 0:
+            if i != 0 and i % 500 == 0:
                 print(
-                    'training: %d/%d, train_loss: %.6f, train_acc: %.6f' %
+                    'training: %d/%d, train_loss: %.6f, train_acc: %.3f%%' %
                     (i, len(loader), total_loss / (i * features.size(0)),
                      100 * train_score / (i * features.size(0))))
 
@@ -127,9 +129,10 @@ if __name__=="__main__":
         eval_loss, eval_score = evaluate(model, eval_loader, cfg)
         model.train()
 
-        print('\teval score: %.2f' % (100 * eval_score))
+        print('eval score: %.3f%%' % (100 * eval_score))
 
         if (eval_score > best_eval_score):
+            print("Saving best model")
             model_path = os.path.join(cfg.output_dir, "VEQA_best_model.pth")
             utils.save_model(model_path, model, epoch, optim)
             best_eval_score = eval_score

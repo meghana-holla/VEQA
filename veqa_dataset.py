@@ -10,13 +10,15 @@ from torch.optim import Adam
 from transformers import LxmertTokenizer, LxmertModel
 import utils
 
+from random import sample
+
 class VEQADataset(Dataset):
-    def __init__(self, split, base_dir, questions_path, annos_path, feature_path, boxes_path, args={}):
+    def __init__(self, split, base_dir, questions_path, annos_path, feature_path, boxes_path, args={"num_ans": 4}):
         super(VEQADataset, self).__init__()
         # os.path.join(base_dir, feature_path)
         self.features = zarr.open(os.path.join(base_dir, feature_path), mode='r')
         self.boxes = zarr.open(os.path.join(base_dir, boxes_path), mode='r')
-        self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"][:32]
+        self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"]
         self.annotations = json.load(open(os.path.join(base_dir, annos_path)))["annotations"]
         
         self.annotations = dict(zip(list(d["question_id"] for d in self.annotations), self.annotations))
@@ -35,8 +37,8 @@ class VEQADataset(Dataset):
             self.datapoints[i]["answer"] = self.annotations[qid]["multiple_choice_answer"]
             # breakpoint()
 
+        self.num_ans = args.get("num_ans", len(self.datapoints[0]["multiple_choices"]))
         self.__process_vqa()
-        self.num_ans = len(self.datapoints[0]["multiple_choices"])
 
         # for i in json.load(open(os.path.join(base_dir, questions_path)))["questions"]:
         #     breakpoint()
@@ -46,8 +48,13 @@ class VEQADataset(Dataset):
             q = datapoint["question"]
             qas = []
             scores = []
+
             answer = self.datapoints[ind]["answer"]
-            for a in self.datapoints[ind]["multiple_choices"]:
+            a_ind = self.datapoints[ind]["multiple_choices"].index(answer)
+            assert a_ind>=0
+            answers = sample(self.datapoints[ind]["multiple_choices"][:a_ind]+self.datapoints[ind]["multiple_choices"][a_ind+1:], self.num_ans-1)
+            answers+=[answer]
+            for a in answers:
                 qas.append(q+" "+a)
                 
                 # Somewhere is will be our Hypothesis Generator Module.

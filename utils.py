@@ -39,7 +39,7 @@ def trim_collate(batch):
     # breakpoint()
     
     "Puts each data field into a tensor with outer dimension batch size"
-    _use_shared_memory = True
+    _use_shared_memory = False
     error_msg = "batch must contain tensors, numbers, dicts or lists; found {}"
     elem_type = type(batch[0])
     # print(elem_type)

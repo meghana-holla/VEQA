@@ -1,7 +1,7 @@
 {
-    "num_ans": 18, 
-    "epochs": 10, 
-    "batch_size": 32, 
+    "num_ans": 4, 
+    "epochs": 25, 
+    "batch_size": 256, 
     "output_dir": "/home/meghana/meg/VEQA/Trained", 
     "base_dir":"/home/meghana/meg/VEQA/data", 
     "train_q": "MultipleChoice_mscoco_train2014_questions.json", 
