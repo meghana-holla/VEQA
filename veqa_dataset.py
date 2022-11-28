@@ -13,13 +13,15 @@ import utils
 from random import sample
 
 class VEQADataset(Dataset):
-    def __init__(self, split, base_dir, questions_path, annos_path, feature_path, boxes_path, args={"num_ans": 4}):
+    def __init__(self, split, base_dir, questions_path, annos_path, feature_path, boxes_path, hypothesis_path, args={"num_ans": 4}):
         super(VEQADataset, self).__init__()
         # os.path.join(base_dir, feature_path)
         self.features = zarr.open(os.path.join(base_dir, feature_path), mode='r')
         self.boxes = zarr.open(os.path.join(base_dir, boxes_path), mode='r')
         self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"]
         self.annotations = json.load(open(os.path.join(base_dir, annos_path)))["annotations"]
+        #
+        self.hypothesis = json.load(open(os.path.join(base_dir, hypothesis_path)))
         
         self.annotations = dict(zip(list(d["question_id"] for d in self.annotations), self.annotations))
         
@@ -39,9 +41,14 @@ class VEQADataset(Dataset):
         self.num_ans = args.get("num_ans", len(self.datapoints[0]["multiple_choices"]))
         self.__process_vqa()
 
+        self.hypothesis_dicts = {}
+        for d in self.hypothesis:
+            self.hypothesis_dicts[d['question_id']] = d['sentences']
+
     def __process_vqa(self):
         for ind, datapoint in enumerate(self.datapoints):
             q = datapoint["question"]
+            qid = datapoint["question_id"]
 
             #Contains our hypotheses, which are merged question answer sentences.
             qas = []
@@ -57,8 +64,10 @@ class VEQADataset(Dataset):
             answers = sample(self.datapoints[ind]["multiple_choices"][:a_ind]+self.datapoints[ind]["multiple_choices"][a_ind+1:], self.num_ans-1)
             answers+=[answer]
 
+            hypothesis_answers = self.hypothesis_dicts[qid]
+
             # Needs to be completed
-            for a in answers:
+            for ind, a in enumerate(answers):
 
                 if a.strip() == answer.strip():
                     scores.append(1)
@@ -75,7 +84,7 @@ class VEQADataset(Dataset):
                 # ========== HYPOTHESIS GENERATION LOGIC ==========
                 
                 # this needs to be replaced with our hypothesis generation logic.
-                hypothesis = None
+                hypothesis = hypothesis_answers[ind]
 
                 # ========== =========================== ==========
                 
