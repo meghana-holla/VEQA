@@ -10,5 +10,6 @@
     "eval_q": "MultipleChoice_mscoco_val2014_questions.json", 
     "eval_a": "mscoco_val2014_annotations.json", 
     "features": "coco/trainval.zarr", 
-    "boxes": "coco/trainval_boxes.zarr"
+    "boxes": "coco/trainval_boxes.zarr",
+    "hypothesis_path": "change this to pathname"
 }

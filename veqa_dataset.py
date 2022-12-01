@@ -20,6 +20,8 @@ class VEQADataset(Dataset):
         self.boxes = zarr.open(os.path.join(base_dir, boxes_path), mode='r')
         self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"][:20]
         self.annotations = json.load(open(os.path.join(base_dir, annos_path)))["annotations"]
+        #
+        self.hypothesis = json.load(open(os.path.join(base_dir, args["hypothesis_path"])))
         
         self.annotations = dict(zip(list(d["question_id"] for d in self.annotations), self.annotations))
         
@@ -39,9 +41,14 @@ class VEQADataset(Dataset):
         self.num_ans = args.get("num_ans", len(self.datapoints[0]["multiple_choices"]))
         self.__process_vqa()
 
+        self.hypothesis_dicts = {}
+        for d in self.hypothesis:
+            self.hypothesis_dicts[d['question_id']] = d['sentences']
+
     def __process_vqa(self):
         for ind, datapoint in enumerate(self.datapoints):
             q = datapoint["question"]
+            qid = datapoint["question_id"]
 
             #Contains our hypotheses, which are merged question answer sentences.
             qas = []
@@ -60,8 +67,10 @@ class VEQADataset(Dataset):
             
             answers.insert(answer_position, answer)
 
+            hypothesis_answers = self.hypothesis_dicts[qid]
+
             # Needs to be completed
-            for a in answers:
+            for ind, a in enumerate(answers):
 
                 if a.strip() == answer.strip():
                     scores.append(1)
@@ -78,7 +87,7 @@ class VEQADataset(Dataset):
                 # ========== HYPOTHESIS GENERATION LOGIC ==========
                 
                 # this needs to be replaced with our hypothesis generation logic.
-                hypothesis = q+" "+a
+                hypothesis = hypothesis_answers[ind]
 
                 # ========== =========================== ==========
                 
