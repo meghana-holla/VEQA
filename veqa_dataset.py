@@ -18,7 +18,7 @@ class VEQADataset(Dataset):
         # os.path.join(base_dir, feature_path)
         self.features = zarr.open(os.path.join(base_dir, feature_path), mode='r')
         self.boxes = zarr.open(os.path.join(base_dir, boxes_path), mode='r')
-        self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"]
+        self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"][:20]
         self.annotations = json.load(open(os.path.join(base_dir, annos_path)))["annotations"]
         
         self.annotations = dict(zip(list(d["question_id"] for d in self.annotations), self.annotations))

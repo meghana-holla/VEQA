@@ -14,6 +14,7 @@ from argparse import ArgumentParser
 
 from veqa_dataset import VEQADataset
 from torchmetrics.functional import precision_recall
+import random
 
 
 def compute_score_with_logits(outputs, scores):
@@ -99,6 +100,10 @@ if __name__=="__main__":
 
         cfg = AttributeDict(json.load(open(args.config)))
 
+        torch.manual_seed(cfg.seed)
+        np.random.seed(cfg.seed)
+        random.seed(cfg.seed)
+
         eval_dataset = VEQADataset("eval", cfg.base_dir, cfg.eval_q, cfg.eval_a, cfg.features, cfg.boxes, cfg)
         eval_loader = DataLoader(eval_dataset, cfg.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
         
@@ -125,6 +130,10 @@ if __name__=="__main__":
                 __delattr__ = dict.__delitem__
 
         cfg = AttributeDict(json.load(open(args.config)))
+
+        torch.manual_seed(cfg.seed)
+        np.random.seed(cfg.seed)
+        random.seed(cfg.seed)
 
         dataset = VEQADataset("train", cfg.base_dir, cfg.train_q, cfg.train_a, cfg.features, cfg.boxes, cfg)
         eval_dataset = dataset = VEQADataset("eval", cfg.base_dir, cfg.eval_q, cfg.eval_a, cfg.features, cfg.boxes, cfg)
