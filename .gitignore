@@ -164,3 +164,4 @@ data/
 Trained/
 archive/
 *.pyc
+data_preprocess/*/*.json
