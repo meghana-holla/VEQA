@@ -11,5 +11,6 @@
     "eval_a": "mscoco_val2014_annotations.json", 
     "features": "coco/trainval.zarr", 
     "boxes": "coco/trainval_boxes.zarr",
-    "hypothesis_path": "change this to pathname"
+    "train_hypothesis_path": "finalData.json",
+    "eval_hypothesis_path": "evalfinalData.json"
 }

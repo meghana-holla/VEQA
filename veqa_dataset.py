@@ -18,10 +18,11 @@ class VEQADataset(Dataset):
         # os.path.join(base_dir, feature_path)
         self.features = zarr.open(os.path.join(base_dir, feature_path), mode='r')
         self.boxes = zarr.open(os.path.join(base_dir, boxes_path), mode='r')
-        self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"][:20]
+        self.datapoints = json.load(open(os.path.join(base_dir, questions_path)))["questions"]
         self.annotations = json.load(open(os.path.join(base_dir, annos_path)))["annotations"]
         #
-        self.hypothesis = json.load(open(os.path.join(base_dir, args["hypothesis_path"])))
+        hpath="%s_hypothesis_path"%split
+        self.hypothesis = json.load(open(os.path.join(base_dir, args[hpath])))
         
         self.annotations = dict(zip(list(d["question_id"] for d in self.annotations), self.annotations))
         
@@ -39,14 +40,17 @@ class VEQADataset(Dataset):
             self.datapoints[i]["answer"] = self.annotations[qid]["multiple_choice_answer"]
 
         self.num_ans = args.get("num_ans", len(self.datapoints[0]["multiple_choices"]))
-        self.__process_vqa()
+        
 
         self.hypothesis_dicts = {}
         for d in self.hypothesis:
             self.hypothesis_dicts[d['question_id']] = d['sentences']
 
+        self.__process_vqa()
+
     def __process_vqa(self):
         for ind, datapoint in enumerate(self.datapoints):
+            
             q = datapoint["question"]
             qid = datapoint["question_id"]
 
@@ -60,17 +64,25 @@ class VEQADataset(Dataset):
             a_ind = self.datapoints[ind]["multiple_choices"].index(answer)
             assert a_ind>=0
 
-            # Selecting `self.num_ans` (set to 4 for now) number of answer choies from given 18. 
-            answers = sample(self.datapoints[ind]["multiple_choices"][:a_ind]+self.datapoints[ind]["multiple_choices"][a_ind+1:], self.num_ans-1)
+            # Selecting `self.num_ans` (set to 4 for now) number of answer choies from given 18. Here selecting the answer index
+            answers_index = sample(list(range(a_ind))+list(range(a_ind+1, len(self.datapoints[ind]["multiple_choices"]))), self.num_ans-1) # sample(self.datapoints[ind]["multiple_choices"][:a_ind]+self.datapoints[ind]["multiple_choices"][a_ind+1:], self.num_ans-1)
             
+            # Finding a rnadom position to insert our answer
             answer_position = sample(range(self.num_ans), 1)[0]
+
             
-            answers.insert(answer_position, answer)
+            
+            # Inserting our answer index into answers_index at answer_position
+            answers_index.insert(answer_position, a_ind)
+
+            answers = [self.datapoints[ind]["multiple_choices"][i] for i in answers_index]
 
             hypothesis_answers = self.hypothesis_dicts[qid]
 
+            qas = [hypothesis_answers[i] for i in answers_index]
+
             # Needs to be completed
-            for ind, a in enumerate(answers):
+            for _, a in enumerate(answers):
 
                 if a.strip() == answer.strip():
                     scores.append(1)
@@ -87,14 +99,17 @@ class VEQADataset(Dataset):
                 # ========== HYPOTHESIS GENERATION LOGIC ==========
                 
                 # this needs to be replaced with our hypothesis generation logic.
-                hypothesis = hypothesis_answers[ind]
+                # hypothesis = hypothesis_answers[_]
 
                 # ========== =========================== ==========
                 
-                qas.append(hypothesis)
+                # qas.append(hypothesis)
             
             assert len(qas) == len(scores)
+
             self.datapoints[ind]["qas"], self.datapoints[ind]["scores"] = qas, scores
+
+        
 
     def __getitem__(self, index):
         item = self.datapoints[index]
