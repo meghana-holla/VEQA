@@ -13,7 +13,7 @@ import utils
 from random import sample
 
 class VEQADataset(Dataset):
-    def __init__(self, split, base_dir, questions_path, annos_path, feature_path, boxes_path, args={"num_ans": 4}):
+    def __init__(self, split, base_dir, questions_path, annos_path, feature_path, boxes_path, args):
         super(VEQADataset, self).__init__()
         # os.path.join(base_dir, feature_path)
         self.features = zarr.open(os.path.join(base_dir, feature_path), mode='r')
@@ -55,7 +55,10 @@ class VEQADataset(Dataset):
 
             # Selecting `self.num_ans` (set to 4 for now) number of answer choies from given 18. 
             answers = sample(self.datapoints[ind]["multiple_choices"][:a_ind]+self.datapoints[ind]["multiple_choices"][a_ind+1:], self.num_ans-1)
-            answers+=[answer]
+            
+            answer_position = sample(range(self.num_ans), 1)[0]
+            
+            answers.insert(answer_position, answer)
 
             # Needs to be completed
             for a in answers:
@@ -75,7 +78,7 @@ class VEQADataset(Dataset):
                 # ========== HYPOTHESIS GENERATION LOGIC ==========
                 
                 # this needs to be replaced with our hypothesis generation logic.
-                hypothesis = None
+                hypothesis = q+" "+a
 
                 # ========== =========================== ==========
                 
@@ -107,8 +110,11 @@ class VEQADataset(Dataset):
     
     def __len__(self):
         return len(self.datapoints)
-#             best_eval_score = eval_score
 
+if __name__=="__main__":
+    d = VEQADataset("train", "/home/meghana/meg/VEQA/data", "MultipleChoice_mscoco_train2014_questions.json", "mscoco_train2014_annotations.json", "coco/trainval.zarr", "coco/trainval_boxes.zarr", args={"num_ans": 4})
+    x = d.__getitem__(4)
+    breakpoint()
 
 
         

@@ -35,7 +35,7 @@ def save_model(path, model, epoch, optimizer=None):
 
     torch.save(model_dict, path)
 
-def trim_collate(batch):
+def trim_collate(batch, pad=True):
     # breakpoint()
     
     "Puts each data field into a tensor with outer dimension batch size"
@@ -48,6 +48,7 @@ def trim_collate(batch):
         #print("batch[0].dim()",len(batch[0]),batch[0].dim(),batch[0])
         if 1 < batch[0].dim(): # image features
             max_num_boxes = max([x.size(0) for x in batch])
+            # print(max_num_boxes)
             if _use_shared_memory:
                 # If we're in a background process, concatenate directly into a
                 # shared memory tensor to avoid an extra copy
