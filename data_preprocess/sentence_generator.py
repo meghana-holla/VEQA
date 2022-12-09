@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 
-ansdata = pd.read_csv('data/anstype.csv')
+ansdata = pd.read_csv('anstype.csv')
 
 keys = ansdata['questiontype'].to_list()
 values = ansdata['prompt'].to_list()
@@ -14,7 +14,7 @@ def sentence_generator(question_type, multiple_choices):
         sentenceList.append(prompt + ' ' + choice)
     return sentenceList
 
-preprocessedFile = open('VEQA/data/MultipleChoice_mscoco_train2014_questions.json')
+preprocessedFile = open('../data/MultipleChoice_mscoco_train2014_questions.json')
 data = json.load(preprocessedFile)
 
 finalData = []
@@ -28,5 +28,5 @@ for i, item in enumerate(data['questions']):
     dicts['question_type'] = data['questions'][i]['question_type']
     finalData.append(dicts)
 
-with open('finalData.json', 'w') as outfile:
+with open('FinalData.json', 'w') as outfile:
   json.dump(finalData, outfile, ensure_ascii=False)

@@ -144,7 +144,7 @@ if __name__=="__main__":
             total_loss += loss.item()
             total_size += features.size(0)
 
-            if i != 0 and i % 100 == 0:
+            if i != 0 and i % 1000 == 0:
                 print(
                     'training: %d/%d, train_loss: %.3f, train_acc: %.3f%%' %
                     (i, len(loader), total_loss / total_size,
@@ -169,5 +169,5 @@ if __name__=="__main__":
         results["train"]["accuracy"].append(train_score/total_size)
     
         import json
-        with open("/home/meghana/meg/VEQA/res.json") as f:
+        with open("/home/meghana/meg/VEQA/Trained/ve_train_results.json", "w") as f:
             json.dump(results, f)

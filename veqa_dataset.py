@@ -40,11 +40,13 @@ class VEQADataset(Dataset):
             self.datapoints[i]["answer"] = self.annotations[qid]["multiple_choice_answer"]
 
         self.num_ans = args.get("num_ans", len(self.datapoints[0]["multiple_choices"]))
-        
 
-        self.hypothesis_dicts = {}
-        for d in self.hypothesis:
-            self.hypothesis_dicts[d['question_id']] = d['sentences']
+        self.hg_mode = args.get("hg_mode", 0)
+        
+        if self.hg_mode ==1:
+            self.hypothesis_dicts = {}
+            for d in self.hypothesis:
+                self.hypothesis_dicts[d['question_id']] = d['sentences']
 
         self.__process_vqa()
 
@@ -77,9 +79,9 @@ class VEQADataset(Dataset):
 
             answers = [self.datapoints[ind]["multiple_choices"][i] for i in answers_index]
 
-            hypothesis_answers = self.hypothesis_dicts[qid]
-
-            qas = [hypothesis_answers[i] for i in answers_index]
+            if self.hg_mode ==1:
+                hypothesis_answers = self.hypothesis_dicts[qid]
+                qas = [hypothesis_answers[i] for i in answers_index]
 
             # Needs to be completed
             for _, a in enumerate(answers):
@@ -99,7 +101,10 @@ class VEQADataset(Dataset):
                 # ========== HYPOTHESIS GENERATION LOGIC ==========
                 
                 # this needs to be replaced with our hypothesis generation logic.
-                # hypothesis = hypothesis_answers[_]
+                if self.hg_mode == 0:
+                    # print("Hello")
+                    hypothesis = q+" "+a
+                    qas.append(hypothesis)
 
                 # ========== =========================== ==========
                 

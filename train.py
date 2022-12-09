@@ -17,15 +17,19 @@ from torchmetrics.functional import precision_recall
 import random
 
 
-def compute_score_with_logits(outputs, scores):
+def compute_score_with_logits(outputs, scores, k=2):
+
+    s_top_2 = (torch.argmax(scores, dim=1).repeat(1,k).reshape(-1,k)==torch.topk(outputs, k=k).indices).any(dim=1)
+    s_top_1 = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
     # s = outputs*scores
-    s = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
-    return s>0
+    # s = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
+    return s_top_2>0, s_top_1>0
 
 def evaluate(model, loader, cfg):
     model.eval()
 
     eval_score = 0
+    eval_score_top_2 = 0
     eval_pre = 0
     eval_rec = 0
     total_loss = 0
@@ -57,25 +61,29 @@ def evaluate(model, loader, cfg):
 
         loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, scores, reduction="mean") #* scores.size(1)
         
-        score = compute_score_with_logits(outputs, scores.data).sum()
+        scores_top_2, scores_top_1 = compute_score_with_logits(outputs, scores.data)
+        scores_top_2, scores_top_1 = scores_top_2.sum(), scores_top_1.sum()
         precision, recall = precision_recall(torch.argmax(outputs, dim=1), torch.argmax(scores, dim=1), average="macro", num_classes = cfg.num_ans)
         # breakpoint()
         eval_pre+=precision
         eval_rec+=recall
 
-        eval_score += score.item()
+        eval_score += scores_top_1.item()
+        eval_score_top_2 += scores_top_2.item()
+
         total_count += outputs.size(0)
         total_loss += loss.item() #* features.size(0)
 
         final_loss = total_loss / (i+1)
         final_score = eval_score / total_count
+        final_score_top_2 = eval_score_top_2 / total_count
         final_pre = eval_pre / (i+1)
         final_rec = eval_rec / (i+1)
 
         if i == len(loader) or  i%1000==999:
-            print("Acc: %.3f Rec: %.3f Prec: %.3f Loss: %.3f"%(100*final_score, 100*final_rec, 100*final_pre, final_loss))
+            print("Acc: %.3f Top-2 Acc: %.3f Rec: %.3f Prec: %.3f Loss: %.3f"%(100*final_score, 100*final_score_top_2, 100*final_rec, 100*final_pre, final_loss))
 
-    return final_loss, final_score, final_pre, final_rec
+    return final_loss, final_score, final_score_top_2, final_pre, final_rec
 
 if __name__=="__main__":
     
@@ -117,9 +125,9 @@ if __name__=="__main__":
         optim.zero_grad()
         
         model.eval()
-        eval_loss, eval_score = evaluate(model, eval_loader, cfg)
+        final_loss, final_score, final_score_top_2, final_pre, final_rec = evaluate(model, eval_loader, cfg)
 
-        print('eval score: %.3f%%' % (100 * eval_score))
+        print('eval score: %.3f%% | eval top-2 score: %.3f%% | eval precision: %.3f%% | eval recall: %.3f%%' % (100*final_score, 100*final_score_top_2, 100*final_pre, 100*final_rec))
 
     elif args.mode=="train":
         from torch.utils.data import DataLoader
@@ -148,13 +156,14 @@ if __name__=="__main__":
         optim.zero_grad()
 
         best_eval_score = 0
-        results = {"accuracy":[], "recall":[], "precision":[]}
+        results = {"accuracy":[], "top 2 accuracy":[], "recall":[], "precision":[]}
         
         for epoch in range(cfg.epochs):
 
             print(f"=============================Epoch {epoch}/{cfg.epochs}=============================\n")
             model.train()
             train_score = 0
+            train_score_top_2 = 0
             train_rec = 0
             train_pre = 0
             total_loss = 0
@@ -189,11 +198,14 @@ if __name__=="__main__":
 
 
 
-                score = compute_score_with_logits(outputs, scores.data).sum()
+                scores_top_2, scores_top_1 = compute_score_with_logits(outputs, scores.data)
+                scores_top_2, scores_top_1 = scores_top_2.sum(), scores_top_1.sum()
                 precision, recall = precision_recall(torch.argmax(outputs, dim=1), torch.argmax(scores, dim=1), average="macro", num_classes = cfg.num_ans)
                 
 
-                train_score += score.item()
+                train_score += scores_top_1.item()
+                train_score_top_2 += scores_top_2.item()
+
                 total_loss += loss.item()
                 total_count += outputs.size(0)
 
@@ -201,12 +213,13 @@ if __name__=="__main__":
                 train_rec += recall
 
                 if i == len(loader) or i % 1000 == 999:
-                    print("epoch %d || training: %d/%d, train_loss: %.6f, train accuracy: %.3f%% train precision: %.3f%% train recall: %.3f%%"%(
+                    print("epoch %d || training: %d/%d, train_loss: %.6f, train accuracy: %.3f%% train top-2 accuracy: %.3f%% train precision: %.3f%% train recall: %.3f%%"%(
                         epoch, 
                         i+1, 
                         len(loader), 
                         total_loss / (i+1),
                         100 * train_score / total_count,
+                        100 * train_score_top_2 / total_count,
                         100 * train_pre / (i+1),
                         100 * train_rec / (i+1)))
                     
@@ -214,23 +227,25 @@ if __name__=="__main__":
             total_loss /= len(loader)
             print(f"=============================EVAL for Epoch {epoch}/{cfg.epochs}=============================\n")
             model.eval()
-            eval_loss, eval_score, eval_pre, eval_rec = evaluate(model, eval_loader, cfg)
+            eval_loss, eval_score, eval_score_top_2, eval_pre, eval_rec = evaluate(model, eval_loader, cfg)
             model.train()
 
-            print('val loss: %.6f, val accuracy: %.3f%% val precision: %.3f%% val recall: %.3f%%'%(
+            print('val loss: %.6f, val accuracy: %.3f%%, val top-2 accuracy: %.3f%% val precision: %.3f%% val recall: %.3f%%'%(
                 eval_loss,
                 100 * eval_score,
+                100 * eval_score_top_2,
                 100 * eval_pre,
                 100 * eval_rec))
 
             results["accuracy"].append((train_score / total_count))
+            results["top 2 accuracy"].append((train_score_top_2 / total_count))
             results["recall"].append((train_rec / len(loader)).item())
             results["precision"].append((train_pre / len(loader)).item())
 
             if (eval_score > best_eval_score):
                 print("Saving best model")
-                model_path = os.path.join(cfg.output_dir, "VEQA_best_model.pth")
+                model_path = os.path.join(cfg.output_dir, "VEQA_QA_best_model.pth")
                 utils.save_model(model_path, model, epoch, optim)
                 best_eval_score = eval_score
         import json
-        json.dump(results, open("Trained/results.json", "w"))
+        json.dump(results, open("Trained/results_qa.json", "w"))

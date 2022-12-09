@@ -1,7 +1,7 @@
 {
     "num_ans": 4, 
     "epochs": 25, 
-    "batch_size": 256, 
+    "batch_size": 8, 
     "seed": 5824,
     "output_dir": "/home/meghana/meg/VEQA/Trained", 
     "base_dir":"/home/meghana/meg/VEQA/data", 
