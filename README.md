@@ -45,3 +45,13 @@ Note: Change values in `config.json`, especially `base_dir`, `[train|eval]_hypot
 
 #### VEQA(SNLI-VE) Configuration
 `ve_train.py` and `ve_dataset.py` contain the model configuration for SNLI-VE training and the dataloader for SNLI-VE respectively. `ve_train.py` can be run the same was as `run.py`.
+
+
+#### Files
+`run.py` - VEQA train/test pipeline for AS_{VQA} configuration\
+`model.py` - VEQA model code\
+`ve_train.py` - VEQA train pipeline for AS_{SNLI-VE} configuration\
+`data_preprocess/sentence_generator.py` - Code for precomputing hypothesis\
+`dataset.py` - Dataset for VQA dataset\
+`ve_dataset.py` - Dataset for SNLI-VE dataset
+
