@@ -1,6 +1,6 @@
 # AML Project
 
-Note: All the steps listed below are enclosed in `VEQA/run.sh`. Execute `./run` to get the code set up and running.
+Note: All the steps listed below are enclosed in `VEQA/run.sh`. Execute `source ./run.sh` to get the code set up and running.
 
 ## Running Instructions
 
