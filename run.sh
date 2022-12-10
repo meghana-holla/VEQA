@@ -10,7 +10,7 @@ tar -xvf veqadata.tar.gz
 rm veqadata.tar.gz
 
 echo "Downloading pretrained VEQA model for HQ+VQA configuration"
-cd ../Trained
+cd Trained
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=13PvcN-Ebn_s57Q-1C6EqKEIvUcExRn9a' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=13PvcN-Ebn_s57Q-1C6EqKEIvUcExRn9a" -O VEQA_best_model.pth && rm -rf /tmp/cookies.txt
 cd ..
 
