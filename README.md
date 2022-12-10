@@ -1,16 +1,22 @@
 # AML Project
-After cloning, make sure to run the following commands:
+
+Note: All the steps listed below are enclosed in `VEQA/run.sh`. Execute `source ./run.sh` to get the code set up and running.
+
+## Running Instructions
+
+### Set up the Environment
+After cloning, make sure to run the following commands (make sure you are in the root directory `VEQA/`):
 ```
-cd VEQA
 python -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 mkdir Trained
 ```
 
-## Download Data
-Run `./download.sh`
-Note: This script downloads the COCO features, which take ~3 hours to download.
+### Download the Data
+Run `./download.sh` to download the image features and question-answer annotations.
+
+Note: This script downloads the COCO features, which take ~3 hours to download. To expedite things, we provide an abdridged version of the data for quick running/testing of code here. It contain ~5% of the total number of questions (amounting to ~12,000 questions). Although please note that we trained our models on the full data.
 
 After running this script, you `data` directory should look as follows:
 ```
@@ -25,13 +31,14 @@ Note: To reproduce VEQA in the SNLI-VE configuration, download the data using [t
 <!-- VQA Questions data [[link](https://visualqa.org/vqa_v1_download.html)] -->
 
 
-## Training
+### Training
 Note: Change values in `config.json`, especially `base_dir`, `[train|eval]_hypothesis_path` and `output_dir`
 
-Make sure to move `json` files generated from the hypothesis generator to `data/`
-
-### Training
+#### Training
 `python run.py --config config/config.json --mode train`
 
-### Inference
-`python run.py --config config/config.json --mode test`
+#### Inference
+`python run.py --config config/config.json --mode test --model <model path>`
+
+#### VEQA(SNLI-VE) Configuration
+`ve_train.py` and `ve_dataset.py` contain the model configuration for SNLI-VE training and the dataloader for SNLI-VE respectively. `ve_train.py` can be run the same was as `run.py`.
