@@ -20,10 +20,13 @@ Note: This script downloads the COCO features, which take ~3 hours to download. 
 
 After running this script, you `data` directory should look as follows:
 ```
-Add
-Tree
-Output
-Here
+coco/
+evalfinalData.json
+finalData.json
+mscoco_train2014_annotations.json
+mscoco_val2014_annotations.json
+MultipleChoice_mscoco_train2014_questions.json
+MultipleChoice_mscoco_val2014_questions.json
 ```
 
 Note: To reproduce VEQA in the SNLI-VE configuration, download the data using [this script](https://github.com/ChenRocks/UNITER/blob/master/scripts/download_ve.sh).
