@@ -92,7 +92,7 @@ def evaluate(model, loader, cfg):
         final_pre = eval_pre / (i+1)
         final_rec = eval_rec / (i+1)
 
-        if i == len(loader) or  i%1000==999:
+        if i == len(loader) or  i%20==19:
             print("Acc: %.3f Top-2 Acc: %.3f Rec: %.3f Prec: %.3f Loss: %.3f"%(100*final_score, 100*final_score_top_2, 100*final_rec, 100*final_pre, final_loss))
 
     return final_loss, final_score, final_score_top_2, final_pre, final_rec
