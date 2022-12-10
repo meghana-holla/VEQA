@@ -12,5 +12,6 @@
     "features": "coco/trainval.zarr", 
     "boxes": "coco/trainval_boxes.zarr",
     "train_hypothesis_path": "finalData.json",
-    "eval_hypothesis_path": "evalfinalData.json"
+    "eval_hypothesis_path": "evalfinalData.json",
+    "hg_mode": 1
 }

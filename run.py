@@ -16,15 +16,18 @@ from veqa_dataset import VEQADataset
 from torchmetrics.functional import precision_recall
 import random
 
-
+# Function for computing the top 1 and top 2 accuracy
 def compute_score_with_logits(outputs, scores, k=2):
-
+    # Top 2 accuracy compuation
     s_top_2 = (torch.argmax(scores, dim=1).repeat(1,k).reshape(-1,k)==torch.topk(outputs, k=k).indices).any(dim=1)
+    
+    # Top 1 accuracy compuation
     s_top_1 = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
-    # s = outputs*scores
-    # s = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
+    
     return s_top_2>0, s_top_1>0
 
+
+# Evaluation/Inference Submodule
 def evaluate(model, loader, cfg):
     model.eval()
 
@@ -43,28 +46,36 @@ def evaluate(model, loader, cfg):
         boxes = boxes.cuda()
         scores = scores.cuda()
 
+        # Get hypothesis tokens, attention masks and token type IDs for LXMERT.
         qa_tokens_item["input_ids"] = qa_tokens.reshape(qa_tokens.shape[0] * cfg.num_ans, -1)
         qa_tokens_item["attention_mask"] = qa_tokens_padded.reshape(qa_tokens_padded.shape[0] * cfg.num_ans, -1)
         qa_tokens_item["token_type_ids"] = qa_tokens_ids.reshape(qa_tokens_ids.shape[0] * cfg.num_ans, -1)
     
-
+        # Create image features for every qustion-answer hypothesis ie., for a batch size b, have b * cfg.num_ans datapoints, such that each datapoint is a sinlge entailment data example.
         features_r = features.repeat(1, cfg.num_ans, 1)
         features = features_r.reshape(features.shape[0] * cfg.num_ans, features.shape[1], features.shape[2])
         boxes_r = boxes.repeat(1, cfg.num_ans , 1)
         boxes = boxes_r.reshape(boxes.shape[0] * cfg.num_ans,boxes.shape[1], boxes.shape[2])
         
-
+        # Generate visual attention mask for coco features
         visual_attention_mask = (features.sum(2)>0).int()
         
+        # Get model prediction
         outputs = model(qa_tokens_item, features, boxes, visual_attention_mask)
+        
+        # reshape outputs from (batch * cfg.num_ans, sequence length, 1) to (batch, sequence length, cfg.num_ans)
         outputs = outputs.reshape(-1, cfg.num_ans)
 
-        loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, scores, reduction="mean") #* scores.size(1)
+        # Compute loss
+        loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, scores, reduction="mean")
         
+        #  Compute top 1 and top 2 accuracy
         scores_top_2, scores_top_1 = compute_score_with_logits(outputs, scores.data)
         scores_top_2, scores_top_1 = scores_top_2.sum(), scores_top_1.sum()
+
+        # Compute precision and recall
         precision, recall = precision_recall(torch.argmax(outputs, dim=1), torch.argmax(scores, dim=1), average="macro", num_classes = cfg.num_ans)
-        # breakpoint()
+        
         eval_pre+=precision
         eval_rec+=recall
 
@@ -72,8 +83,9 @@ def evaluate(model, loader, cfg):
         eval_score_top_2 += scores_top_2.item()
 
         total_count += outputs.size(0)
-        total_loss += loss.item() #* features.size(0)
+        total_loss += loss.item() 
 
+        # Compute epoch-level average metrics values
         final_loss = total_loss / (i+1)
         final_score = eval_score / total_count
         final_score_top_2 = eval_score_top_2 / total_count
@@ -87,7 +99,6 @@ def evaluate(model, loader, cfg):
 
 if __name__=="__main__":
     
-
     import sys
     from argparse import ArgumentParser
     from torch.utils.data import DataLoader
@@ -99,6 +110,8 @@ if __name__=="__main__":
     parser.add_argument("--mode", default="test")
     args = parser.parse_args()
 
+
+    # =============================Evaluation/Inference Branch =============================
     if args.mode == "test":
 
         class AttributeDict(dict):
@@ -129,8 +142,11 @@ if __name__=="__main__":
 
         print('eval score: %.3f%% | eval top-2 score: %.3f%% | eval precision: %.3f%% | eval recall: %.3f%%' % (100*final_score, 100*final_score_top_2, 100*final_pre, 100*final_rec))
 
+
+    # =============================Training Branch =============================
     elif args.mode=="train":
         from torch.utils.data import DataLoader
+        
         from model import VEQ
         class AttributeDict(dict):
                 __getattr__ = dict.__getitem__
@@ -143,21 +159,25 @@ if __name__=="__main__":
         np.random.seed(cfg.seed)
         random.seed(cfg.seed)
 
+        # Create train and validation datasets
         dataset = VEQADataset("train", cfg.base_dir, cfg.train_q, cfg.train_a, cfg.features, cfg.boxes, cfg)
         eval_dataset = dataset = VEQADataset("eval", cfg.base_dir, cfg.eval_q, cfg.eval_a, cfg.features, cfg.boxes, cfg)
         
+        # Load train and validation datasets
         loader = DataLoader(dataset, cfg.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
         eval_loader = DataLoader(eval_dataset, cfg.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
         
         model = VEQ(cfg)
         model = model.cuda()
 
+        # Optimizer initiliazation with learning rates
         optim = Adam(model.parameters(), lr=1e-5)
         optim.zero_grad()
 
         best_eval_score = 0
         results = {"accuracy":[], "top 2 accuracy":[], "recall":[], "precision":[]}
         
+        # Training Starts
         for epoch in range(cfg.epochs):
 
             print(f"=============================Epoch {epoch}/{cfg.epochs}=============================\n")
@@ -176,19 +196,27 @@ if __name__=="__main__":
                 boxes = boxes.cuda()
                 scores = scores.cuda()
 
+                # Get hypothesis tokens, attention masks and token type IDs for LXMERT.
                 qa_tokens_item["input_ids"] = qa_tokens.reshape(qa_tokens.shape[0] * dataset.num_ans, -1)
                 qa_tokens_item["attention_mask"] = qa_tokens_padded.reshape(qa_tokens_padded.shape[0] * dataset.num_ans, -1)
                 qa_tokens_item["token_type_ids"] = qa_tokens_ids.reshape(qa_tokens_ids.shape[0] * dataset.num_ans, -1)
+
+                # Create image features for every qustion-answer hypothesis ie., for a batch size b, have b * cfg.num_ans datapoints, such that each datapoint is a sinlge entailment data example.
                 features_r = features.repeat(1, dataset.num_ans, 1)
                 features = features_r.reshape(features.shape[0] * dataset.num_ans, features.shape[1], features.shape[2])
                 boxes_r = boxes.repeat(1, dataset.num_ans , 1)
                 boxes = boxes_r.reshape(boxes.shape[0] * dataset.num_ans,boxes.shape[1], boxes.shape[2])
 
+                # Generate visual attention mask for coco features
                 visual_attention_mask = (features.sum(2)>0).int()
                 
+                # Get model prediction
                 outputs = model(qa_tokens_item, features, boxes, visual_attention_mask)
+
+                # reshape outputs from (batch * cfg.num_ans, sequence length, 1) to (batch, sequence length, cfg.num_ans)
                 outputs = outputs.reshape(-1, dataset.num_ans)
 
+                # Compute loss
                 loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, scores, reduction="mean")
                 i+=1
 
@@ -197,9 +225,11 @@ if __name__=="__main__":
                 optim.zero_grad()
 
 
-
+                #  Compute top 1 and top 2 accuracy
                 scores_top_2, scores_top_1 = compute_score_with_logits(outputs, scores.data)
                 scores_top_2, scores_top_1 = scores_top_2.sum(), scores_top_1.sum()
+                
+                # Compute precision and recall
                 precision, recall = precision_recall(torch.argmax(outputs, dim=1), torch.argmax(scores, dim=1), average="macro", num_classes = cfg.num_ans)
                 
 
@@ -212,6 +242,7 @@ if __name__=="__main__":
                 train_pre += precision
                 train_rec += recall
 
+                # Diaplay performance at every 1000th run
                 if i == len(loader) or i % 1000 == 999:
                     print("epoch %d || training: %d/%d, train_loss: %.6f, train accuracy: %.3f%% train top-2 accuracy: %.3f%% train precision: %.3f%% train recall: %.3f%%"%(
                         epoch, 
@@ -227,6 +258,7 @@ if __name__=="__main__":
             total_loss /= len(loader)
             print(f"=============================EVAL for Epoch {epoch}/{cfg.epochs}=============================\n")
             model.eval()
+            # Validation loop
             eval_loss, eval_score, eval_score_top_2, eval_pre, eval_rec = evaluate(model, eval_loader, cfg)
             model.train()
 
@@ -242,10 +274,13 @@ if __name__=="__main__":
             results["recall"].append((train_rec / len(loader)).item())
             results["precision"].append((train_pre / len(loader)).item())
 
+            # Save best model
             if (eval_score > best_eval_score):
                 print("Saving best model")
                 model_path = os.path.join(cfg.output_dir, "VEQA_QA_best_model.pth")
                 utils.save_model(model_path, model, epoch, optim)
                 best_eval_score = eval_score
+
+        # Save epoch-wise results
         import json
         json.dump(results, open("Trained/results_qa.json", "w"))

@@ -31,7 +31,7 @@ Note: Change values in `config.json`, especially `base_dir`, `[train|eval]_hypot
 Make sure to move `json` files generated from the hypothesis generator to `data/`
 
 ### Training
-`python train.py --config config/config.json --mode train`
+`python run.py --config config/config.json --mode train`
 
 ### Inference
-`python train.py --config config/config.json --mode test`
+`python run.py --config config/config.json --mode test`
