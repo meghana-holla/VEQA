@@ -2,7 +2,7 @@
 
 Note: All the steps listed below are enclosed in `VEQA/run.sh`. Execute `source ./run.sh` to get the code set up and running.
 
-Note: If running the script shows `ERROR 429: Too Many Requests.`, it could unfortuantely be wget running into multiple request issues. In this case, please follow these steps: 
+Note: If running the script shows `ERROR 429: Too Many Requests.`, it could unfortuantely be wget running into a "multiple request" issue. In this case, please follow these steps: 
 1. Download the data from [here](https://drive.google.com/file/d/1sk55WOI1UkeprcyNT4f6ppoLcjzSK1ua/view?usp=sharing) and place it under `VEQA/`. 
 2. Also download the VEQA checkpoint from [here](https://drive.google.com/file/d/13PvcN-Ebn_s57Q-1C6EqKEIvUcExRn9a/view) and place it under `VEQA/Trained`
 3. Run `source ./run.sh`. It would still show the `ERROR 429: Too Many Requests.`, but would continue unzipping the files sine there are now present.
