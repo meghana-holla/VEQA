@@ -15,13 +15,14 @@ from argparse import ArgumentParser
 
 from ve_dataset import VEQADataset
 
-
+# Accuracy function for metrics
 def compute_score_with_logits(outputs, scores):
-    # s = outputs*scores
-    return (outputs>0.5).int()==scores.int()
-    # s = torch.argmax(outputs, dim=1)==torch.argmax(scores, dim=1)
-    return s>0
 
+    return (outputs>0.5).int()==scores.int()
+
+    #     return s>0
+
+# Evaluate branch
 def evaluate(model, loader, cfg):
     model.eval()
 
@@ -36,27 +37,18 @@ def evaluate(model, loader, cfg):
         features = features.cuda()
         boxes = boxes.cuda()
         scores = scores.cuda()
-
+        
+        # Question-answer tokenized units
         qa_tokens_item["input_ids"] = qa_tokens.squeeze(1) if len(qa_tokens.shape)>2 else qa_tokens
         qa_tokens_item["attention_mask"] = qa_tokens_padded.squeeze(1) if len(qa_tokens_padded.shape)>2 else qa_tokens_padded
         qa_tokens_item["token_type_ids"] = qa_tokens_ids.squeeze(1) if len(qa_tokens_ids.shape)>2 else qa_tokens_ids
-
+        
+        # Visual attention masks
         visual_attention_mask = (features.sum(2)>0).int()
-
-        # qa_tokens_item["input_ids"] = qa_tokens.reshape(qa_tokens.shape[0] * dataset.num_ans, -1)
-        # qa_tokens_item["attention_mask"] = qa_tokens_padded.reshape(qa_tokens_padded.shape[0] * dataset.num_ans, -1)
-        # qa_tokens_item["token_type_ids"] = qa_tokens_ids.reshape(qa_tokens_ids.shape[0] * dataset.num_ans, -1)
-    
-
-        # qa_tokens = qa_tokens.reshape(qa_tokens.shape[0] * dataset.num_ans, -1)
-        # features_r = features.repeat(1, dataset.num_ans, 1)
-        # features = features_r.reshape(features.shape[0] * dataset.num_ans, features.shape[1], features.shape[2])
-        # boxes_r = boxes.repeat(1, dataset.num_ans , 1)
-        # boxes = boxes_r.reshape(boxes.shape[0] * dataset.num_ans,boxes.shape[1], boxes.shape[2])
-        # print(features.shape, boxes.shape, visual_attention_mask.shape, qa_tokens["input_ids"].shape, qa_tokens["attention_mask"].shape, qa_tokens["token_type_ids"].shape)
+        
+        # Model outputs. Unlike in train.py, we dont reshape the output since the training is a direct entailment objective.          
         outputs = model(qa_tokens_item, features, boxes, visual_attention_mask).squeeze(1)
-        # outputs = outputs.reshape(-1, dataset.num_ans)
-
+        
         loss = loss_fn(outputs, scores.float()) #* scores.size(1)
         i+=1
 
@@ -86,13 +78,17 @@ if __name__=="__main__":
 
     cfg = AttributeDict(json.load(open(args.config)))
     results = {"train":{"loss":[], "accuracy":[]}, "eval":{"loss":[], "accuracy":[]}}
-
+    
+    # VE dataset for train and validation
     dataset = VEQADataset("train")
     eval_dataset = VEQADataset("eval")
 
+    
+    # Dataloaders for train and validation datasets
     loader = DataLoader(dataset, cfg.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(eval_dataset, cfg.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     
+    # VEQA model for SNLI-VE configuration
     model = VEQ(cfg)
     model = model.cuda()
 
@@ -120,11 +116,13 @@ if __name__=="__main__":
             features = features.cuda()
             boxes = boxes.cuda()
             scores = scores.cuda()
-
+            
+            # Question answer pairs
             qa_tokens_item["input_ids"] = qa_tokens.squeeze(1) if len(qa_tokens.shape)>2 else qa_tokens
             qa_tokens_item["attention_mask"] = qa_tokens_padded.squeeze(1) if len(qa_tokens_padded.shape)>2 else qa_tokens_padded
             qa_tokens_item["token_type_ids"] = qa_tokens_ids.squeeze(1) if len(qa_tokens_ids.shape)>2 else qa_tokens_ids
-
+            
+            # Visual attention maks creation
             visual_attention_mask = (features.sum(2)>0).int()
 
             outputs = model(qa_tokens_item, features, boxes, visual_attention_mask).squeeze()
@@ -136,8 +134,7 @@ if __name__=="__main__":
             optim.step()
             optim.zero_grad()
 
-            
-
+            # Compute scores for entailment prediction
             score = compute_score_with_logits(outputs, scores.data).sum()
 
             train_score += score.item()
@@ -149,14 +146,16 @@ if __name__=="__main__":
                     'training: %d/%d, train_loss: %.3f, train_acc: %.3f%%' %
                     (i, len(loader), total_loss / total_size,
                      100 * train_score / total_size))
-
+                
+        # computing loss
         total_loss /= total_size
         model.eval()
         eval_loss, eval_score = evaluate(model, eval_loader, cfg)
         model.train()
 
         print('eval loss: %.3f eval score: %.3f%%' % (eval_loss, 100 * eval_score))
-
+        
+        # Save the best model
         if (eval_score > best_eval_score):
             print("Saving best model")
             model_path = os.path.join(cfg.output_dir, "VE_best_model.pth")
@@ -167,7 +166,8 @@ if __name__=="__main__":
         results["eval"]["accuracy"].append(eval_score)
         results["train"]["loss"].append(total_loss)
         results["train"]["accuracy"].append(train_score/total_size)
-    
+        
+        # Save every epoch's results
         import json
         with open("/home/meghana/meg/VEQA/Trained/ve_train_results.json", "w") as f:
             json.dump(results, f)
