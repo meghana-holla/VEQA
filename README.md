@@ -1,11 +1,6 @@
-# AML Project
+# VEQA: Visual Question Answering from the Lens of Visual Entailment
 
 Note: All the steps listed below are enclosed in `VEQA/run.sh`. Execute `source ./run.sh` to get the code set up and running.
-
-Note: If running the script shows `ERROR 429: Too Many Requests.`, it could unfortuantely be wget running into a "multiple request" issue. In this case, please follow these steps: 
-1. Download the data from [here](https://drive.google.com/file/d/1sk55WOI1UkeprcyNT4f6ppoLcjzSK1ua/view?usp=sharing) and place it under `VEQA/`. 
-2. Also download the VEQA checkpoint from [here](https://drive.google.com/file/d/13PvcN-Ebn_s57Q-1C6EqKEIvUcExRn9a/view) and place it under `VEQA/Trained`
-3. Run `source ./run.sh`. It would still show the `ERROR 429: Too Many Requests.`, but would continue unzipping the files sine there are now present.
 
 ## Running Instructions
 
@@ -60,3 +55,26 @@ Note: Change values in `config.json`, especially `base_dir`, `[train|eval]_hypot
 `dataset.py` - Dataset for VQA dataset\
 `ve_dataset.py` - Dataset for SNLI-VE dataset
 
+### Citations
+```
+@InProceedings{VQA,
+author = {Stanislaw Antol and Aishwarya Agrawal and Jiasen Lu and Margaret Mitchell and Dhruv Batra and C. Lawrence Zitnick and Devi Parikh},
+title = {{VQA}: {V}isual {Q}uestion {A}nswering},
+booktitle = {International Conference on Computer Vision (ICCV)},
+year = {2015},
+}
+
+@article{xie2019visual,
+  title={Visual Entailment: A Novel Task for Fine-grained Image Understanding},
+  author={Xie, Ning and Lai, Farley and Doran, Derek and Kadav, Asim},
+  journal={arXiv preprint arXiv:1901.06706},
+  year={2019}
+}
+
+@article{xie2018visual,
+  title={Visual Entailment Task for Visually-Grounded Language Learning},
+  author={Xie, Ning and Lai, Farley and Doran, Derek and Kadav, Asim},
+  journal={arXiv preprint arXiv:1811.10582},
+  year={2018}
+}  
+```
